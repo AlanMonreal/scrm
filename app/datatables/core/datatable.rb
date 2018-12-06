@@ -5,20 +5,24 @@ class Core::Datatable
   attr_reader :view, :options, :sortable_columns, :searchable_columns
   delegate :params, :h, :link_to, :check_box, :number_to_currency, :current_core_user, to: :@view
 
+  #Inicializa las variables de instancia view y options
   def initialize(view, options = {})
     @view = view
     @options = options
     params.permit!
   end
 
+  #Inicializa las sorteable_columns solo si apuntan a nil o false
   def sortable_columns
     @sortable_columns ||= []
   end
 
+  #Inicializa las searchable_columns solo si apuntan a nil o false
   def searchable_columns
     @searchable_columns ||= []
   end
 
+  #Metodo no implementado. Arroja un MethodNotImplementedError con un mensaje.
   def data
     fail(
       MethodNotImplementedError,
@@ -26,6 +30,7 @@ class Core::Datatable
     )
   end
 
+  #Metodo no implementado. Arroja un MethodNotImplementedError con un mensaje.
   def get_raw_records
     fail(
       MethodNotImplementedError,
@@ -33,6 +38,7 @@ class Core::Datatable
     )
   end
 
+  #Convierte los parametros que se le pasan a un JSON
   def as_json(options = {})
     {
       :draw => params[:draw].to_i,
@@ -44,10 +50,13 @@ class Core::Datatable
 
   private
 
+  #Inicializa la variable de entorno @records y le asigna valor cuando este apunta a nil o false.
   def records
     @records ||= fetch_records
   end
 
+ 
+  #Le asigna a records los registros ordenados, filtrados y paginados
   def fetch_records
     records = get_raw_records
     records = sort_records(records) if params[:order].present?
@@ -56,6 +65,7 @@ class Core::Datatable
     records
   end
 
+  #Ordena los registros que se le pasan
   def sort_records(records)
     sort_by = []
     params[:order].to_h.each_value do |item|
@@ -64,16 +74,19 @@ class Core::Datatable
     records.order(sort_by.join(", "))
   end
 
+  #Pagina los registros que se le pasan
   def paginate_records(records)
     records.page(page).per(per_page)
   end
 
+  #Filtra los registros que se le pasan usando simple_search y composite_search
   def filter_records(records)
     records = simple_search(records)
     records = composite_search(records)
     records
   end
 
+  #Realiza una busqueda simple siempre y cuando haya parametros de busqueda
   def simple_search(records)
     return records unless (params[:search].present? && params[:search][:value].present?)
     conditions = build_conditions_for(params[:search][:value])
@@ -81,12 +94,14 @@ class Core::Datatable
     records
   end
 
+  #Realiza una busqueda compuesta
   def composite_search(records)
     conditions = aggregate_query
     records = records.where(conditions) if conditions
     records
   end
 
+  #
   def build_conditions_for(query)
     search_for = query.split(' ')
     criteria = search_for.inject([]) do |criteria, atom|
